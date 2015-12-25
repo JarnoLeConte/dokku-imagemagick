@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Installs the imagemagick package into the container
+
+set -eo pipefail; [[ $DOKKU_TRACE ]] && set -x
+source "$PLUGIN_CORE_AVAILABLE_PATH/common/functions"
+APP="$1"; IMAGE_TAG="$2"; IMAGE=$(get_app_image_name $APP $IMAGE_TAG)
+verify_app_name "$APP"
+
+dokku_log_info1 "Installing ImageMagick..."
+
+CMD="command -v identify >/dev/null 2>&1 && \
+  dpkg -s imagemagick > /dev/null 2>&1 || \
+  (apt-get update && apt-get install -y imagemagick && apt-get clean)"
+
+ID=$(docker run -d $IMAGE /bin/bash -c "$CMD")
+test $(docker wait $ID) -eq 0
+docker commit $ID $IMAGE > /dev/null
